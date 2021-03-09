@@ -48,7 +48,22 @@ export class Assignment4 extends Simulation {
 			ambient: .4,
 		});
 
+		this.hit_material = new Material(phong, {
+			color: color(0, 1, 0, 1)
+		})
+
+		this.transparent = new Material(phong, {
+			color: color(1, 1, 1, 0)
+		})
+
+		this.start = true; //Used to create hitboxes as
+							//we cant create them outside
+							//of the update_state function
 		//Song Data:
+		//Notes of format time(s), lane
+		//where time is when note appears
+		//not when it should be hit
+		//TODO: may change in future
 		this.notes = [
 					new Note(1, 0),
 					new Note(1, 2),
@@ -67,13 +82,40 @@ export class Assignment4 extends Simulation {
 			Mat4.identity().times(Mat4.translation(6, 0, 0)),
 		]
 
+		this.clicks = [false, false, false, false]
 
-
-
-
+		this.hitboxes = null;
 	}
 
 	make_control_panel() {
+		this.key_triggered_button(
+			"First",
+			["g"],
+			() => (this.clicks[0] = true),
+			"#ff00a2",
+			() => (this.clicks[0] = false)
+		);
+		this.key_triggered_button(
+			"Second",
+			["h"],
+			() => (this.clicks[1] = true),
+			"#4400ff",
+			() => (this.clicks[1] = false)
+		);
+		this.key_triggered_button(
+			"Third",
+			["j"],
+			() => (this.clicks[2] = true),
+			"#00fff7",
+			() => (this.clicks[2] = false)
+		);
+		this.key_triggered_button(
+			"Fourth",
+			["k"],
+			() => (this.clicks[3] = true),
+			"#ff8400",
+			() => (this.clicks[3] = false)
+		);
 		super.make_control_panel();
 	}
 
@@ -81,49 +123,81 @@ export class Assignment4 extends Simulation {
 	update_state(dt) {
 		// update_state():  Override the base time-stepping code to say what this particular
 		// scene should do to its bodies every frame -- including applying forces.
-		// Generate moving bodies:
-		this.bodies = this.bodies.filter(b => b.center[2] < 0);
 
-		for(let i of this.lanes){
-			this.bodies.push(
-				new Body(this.shapes.cube, undefined, vec3(1, 1, 1)).emplace(
-					i,
-					vec3(0, 0, 0),
-					0
-				)
-			);
-		}
-		for(let note of this.notes){
-			if(note.time <= this.t){
+		//If first iteration generate hitbox blocks
+		if(this.start){
+			for (let i of this.lanes) {
 				this.bodies.push(
-					new Body(this.shapes.cube, this.note_material, vec3(1, 1, 1)).emplace(
-						this.lanes[note.lane].times(Mat4.translation(0, 1, -30)),
-						vec3(0, 0, 5),
+					new Body(this.shapes.cube, undefined, vec3(1, 1, 1)).emplace(
+						i,
+						vec3(0, 0, 0),
 						0
 					)
 				);
 			}
+			this.start = false;
+			this.hitboxes = this.bodies.slice();
 		}
 
+		//Create new notes
+		for(let i = 0; i < this.notes.length; i++){
+			if(this.notes[i].time <= this.t){
+				this.bodies.push(
+					new Body(this.shapes.cube, this.note_material, vec3(1, 1, 1)).emplace(
+						this.lanes[this.notes[i].lane].times(Mat4.translation(0, 1, -30)),
+						vec3(0, 0, 5),
+						0
+					)
+				);
+			}	
+			else{
+				break;
+			}
+		}
+
+		//Remove all newly created notes from array
 		this.notes = this.notes.filter(n => n.time > this.t);
 
-		// Loop through all bodies (call each "a"):
 		for (let a of this.bodies) {
-			// Cache the inverse of matrix of body "a" to save time.
 			a.inverse = Mat4.inverse(a.drawn_location);
-			a.material = this.note_material;
+			a.material = a.material === this.hit_material ? this.hit_material : this.note_material;
 
 			// *** Collision process is here ***
 			// Loop through all bodies again (call each "b"):
-			for (let b of this.bodies) {
+			for (let b = 0; b < this.hitboxes.length; b++) {
 				// Pass the two bodies and the collision shape to check_if_colliding():
-				if (!a.check_if_colliding(b, this.collider))
-					continue;
-
-				// a.linear_velocity = vec3(0, 0, 0);
-				// a.angular_velocity = 0;
+				if (a !== b && a.check_if_colliding(this.hitboxes[b], this.collider)){
+					let flag = false;
+					switch(b){
+						case 0:
+							if(this.clicks[0]){
+								flag = true;
+							}
+							break;
+						case 1:
+							if (this.clicks[1]) {
+								flag = true;
+							}
+							break;
+						case 2:
+							if (this.clicks[2]) {
+								flag = true;
+							}
+							break;
+						case 3:
+							if (this.clicks[3]) {
+								flag = true;
+							}
+							break;
+					}
+					if(flag){
+						this.hitboxes[b].material = this.hit_material;
+						a.material = this.transparent;
+					}
+				}
 			}
 		}
+		this.bodies = this.bodies.filter(n => n.material !== this.transparent);
 	}
 
 	display(context, program_state) {
