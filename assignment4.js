@@ -1,4 +1,4 @@
-import {Body, Simulation, Test_Data} from "./examples/collisions-demo.js";
+import {Body, Simulation} from "./examples/collisions-demo.js";
 import { defs, tiny } from "./examples/common.js";
 
 const {
@@ -85,6 +85,10 @@ export class Assignment4 extends Simulation {
 
 		this.hitboxes = null;
 
+		this.streak = 0;
+
+		this.points = 0;
+
 		var audio = new Audio("bnb.mp3");
 		audio.play();
 	}
@@ -92,28 +96,28 @@ export class Assignment4 extends Simulation {
 	make_control_panel() {
 		this.key_triggered_button(
 			"First",
-			["g"],
+			["a"],
 			() => (this.clicks[0] = true),
 			"#ff00a2",
 			() => (this.clicks[0] = false)
 		);
 		this.key_triggered_button(
 			"Second",
-			["h"],
+			["w"],
 			() => (this.clicks[1] = true),
 			"#4400ff",
 			() => (this.clicks[1] = false)
 		);
 		this.key_triggered_button(
 			"Third",
-			["j"],
+			["s"],
 			() => (this.clicks[2] = true),
 			"#00fff7",
 			() => (this.clicks[2] = false)
 		);
 		this.key_triggered_button(
 			"Fourth",
-			["k"],
+			["d"],
 			() => (this.clicks[3] = true),
 			"#ff8400",
 			() => (this.clicks[3] = false)
@@ -125,7 +129,6 @@ export class Assignment4 extends Simulation {
 	update_state(dt) {
 		// update_state():  Override the base time-stepping code to say what this particular
 		// scene should do to its bodies every frame -- including applying forces.
-		console.log(this.t);
 		//If first iteration generate hitbox blocks
 		if(this.start){
 			for (let i of this.lanes) {
@@ -146,8 +149,8 @@ export class Assignment4 extends Simulation {
 			if(this.notes[i].time <= this.t){
 				this.bodies.push(
 					new Body(this.shapes.cube, this.note_material, vec3(1, 1, 1)).emplace(
-						this.lanes[this.notes[i].lane].times(Mat4.translation(0, 1, -50)),
-						vec3(0, 0, 1).normalized().times(5),
+						this.lanes[this.notes[i].lane].times(Mat4.translation(0, 1, -30)),
+						vec3(0, 0, 1).normalized().times(10),
 						0
 					)
 				);
@@ -199,15 +202,15 @@ export class Assignment4 extends Simulation {
 				}
 			}
 		}
-		this.bodies = this.bodies.filter(n => n.material !== this.transparent);
+		this.bodies = this.bodies.filter(n => n.material !== this.transparent && n.center[2] < 2);
 	}
 
 	display(context, program_state) {
 		// display(): Draw everything else in the scene besides the moving bodies.
 		super.display(context, program_state);
 		if (!context.scratchpad.controls) {
-			this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
-			this.children.push(new defs.Program_State_Viewer());
+			// this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
+			// this.children.push(new defs.Program_State_Viewer());
 			program_state.set_camera(Mat4.translation(0, -5, -15));
 			// Locate the camera here (inverted matrix).
 		}
