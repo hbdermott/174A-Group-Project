@@ -31,7 +31,6 @@ export class Assignment4 extends Simulation {
 	// collide with one another, coloring them red.
 	constructor() {
 		super();
-
 		// Shapes:
 		this.shapes = {
 			cube: new defs.Cube()
@@ -85,6 +84,9 @@ export class Assignment4 extends Simulation {
 		this.clicks = [false, false, false, false]
 
 		this.hitboxes = null;
+
+		var audio = new Audio("bnb.mp3");
+		audio.play();
 	}
 
 	make_control_panel() {
@@ -123,7 +125,7 @@ export class Assignment4 extends Simulation {
 	update_state(dt) {
 		// update_state():  Override the base time-stepping code to say what this particular
 		// scene should do to its bodies every frame -- including applying forces.
-
+		console.log(this.t);
 		//If first iteration generate hitbox blocks
 		if(this.start){
 			for (let i of this.lanes) {
@@ -144,12 +146,12 @@ export class Assignment4 extends Simulation {
 			if(this.notes[i].time <= this.t){
 				this.bodies.push(
 					new Body(this.shapes.cube, this.note_material, vec3(1, 1, 1)).emplace(
-						this.lanes[this.notes[i].lane].times(Mat4.translation(0, 1, -30)),
-						vec3(0, 0, 5),
+						this.lanes[this.notes[i].lane].times(Mat4.translation(0, 1, -50)),
+						vec3(0, 0, 1).normalized().times(5),
 						0
 					)
 				);
-			}	
+			}
 			else{
 				break;
 			}
