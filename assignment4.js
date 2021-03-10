@@ -74,6 +74,9 @@ export class Assignment4 extends Simulation {
 					new Note(8, 0),
 				];
 
+		this.distance = -30;
+		this.velocity = 6;
+
 		this.lanes = [
 			Mat4.identity().times(Mat4.translation(-6, 0, 0)),
 			Mat4.identity().times(Mat4.translation(-2, 0, 0)),
@@ -85,10 +88,14 @@ export class Assignment4 extends Simulation {
 
 		this.hitboxes = null;
 
-		this.streak = 0;
-
-		this.points = 0;
-
+		this.stats = {
+			streak: 0,
+			points: 0,
+			misses: 0,
+			hits: 0,
+			combo: 1
+		}
+		
 		var audio = new Audio("bnb.mp3");
 		audio.play();
 	}
@@ -130,79 +137,108 @@ export class Assignment4 extends Simulation {
 		// update_state():  Override the base time-stepping code to say what this particular
 		// scene should do to its bodies every frame -- including applying forces.
 		//If first iteration generate hitbox blocks
-		if(this.start){
+		if (this.start) {
 			for (let i of this.lanes) {
 				this.bodies.push(
-					new Body(this.shapes.cube, undefined, vec3(1, 1, 1)).emplace(
+					new Body(this.shapes.cube, this.note_material, vec3(1, 1, 1)).emplace(
 						i,
 						vec3(0, 0, 0),
 						0
 					)
 				);
 			}
+
+			//WHY TF do i need this??
+			for (let a of this.bodies) {
+				a.inverse = Mat4.inverse(a.drawn_location);
+			}
+
 			this.start = false;
 			this.hitboxes = this.bodies.slice();
 		}
 
+		for (let a of this.bodies.filter((n) => n.linear_velocity != 0)) {
+			a.inverse = Mat4.inverse(a.drawn_location);
+		}
+
 		//Create new notes
-		for(let i = 0; i < this.notes.length; i++){
-			if(this.notes[i].time <= this.t){
+		for (let i = 0; i < this.notes.length; i++) {
+			if (this.notes[i].time <= this.t) {
 				this.bodies.push(
 					new Body(this.shapes.cube, this.note_material, vec3(1, 1, 1)).emplace(
-						this.lanes[this.notes[i].lane].times(Mat4.translation(0, 1, -30)),
-						vec3(0, 0, 1).normalized().times(10),
+						this.lanes[this.notes[i].lane].times(
+							Mat4.translation(0, 1, this.distance)
+						),
+						vec3(0, 0, 1).normalized().times(this.velocity),
 						0
 					)
 				);
-			}
-			else{
+			} else {
 				break;
 			}
 		}
 
 		//Remove all newly created notes from array
-		this.notes = this.notes.filter(n => n.time > this.t);
+		this.notes = this.notes.filter((n) => n.time >= this.t);
 
-		for (let a of this.bodies) {
-			a.inverse = Mat4.inverse(a.drawn_location);
-			a.material = a.material === this.hit_material ? this.hit_material : this.note_material;
-
-			// *** Collision process is here ***
-			// Loop through all bodies again (call each "b"):
-			for (let b = 0; b < this.hitboxes.length; b++) {
-				// Pass the two bodies and the collision shape to check_if_colliding():
-				if (a !== b && a.check_if_colliding(this.hitboxes[b], this.collider)){
-					let flag = false;
-					switch(b){
-						case 0:
-							if(this.clicks[0]){
-								flag = true;
-							}
-							break;
-						case 1:
-							if (this.clicks[1]) {
-								flag = true;
-							}
-							break;
-						case 2:
-							if (this.clicks[2]) {
-								flag = true;
-							}
-							break;
-						case 3:
-							if (this.clicks[3]) {
-								flag = true;
-							}
-							break;
-					}
-					if(flag){
-						this.hitboxes[b].material = this.hit_material;
-						a.material = this.transparent;
-					}
+		//lane is x coordiante
+		//Called when a key is pressed
+		//used to check if there is a note in hitbox
+		//Returns true if note hit
+		//False if no note
+		//Updates hits, streak, combo, points, and materials
+		const check_hit = (lane) => {
+			let res = false;
+			const lane_notes = this.bodies.filter(
+				(n) => n.center[0] == lane && n.linear_velocity != 0
+			);
+			const hit_box = this.hitboxes.filter((n) => n.center[0] == lane)[0];
+			for (let note of lane_notes) {
+				if (hit_box.check_if_colliding(note, this.collider)) {
+					note.material = this.transparent; //TODO color or animation for hit
+					this.stats.hits++;
+					this.stats.streak++;
+					this.stats.combo = Math.min(
+						8,
+						1 + Math.floor(this.stats.streak / 20)
+					);
+					this.stats.points +=
+						this.stats.combo *
+						100 *
+						(1 - (Math.abs(note.center[2]) - hit_box.center[2]));
+					res = true;
 				}
 			}
+			if (!res) {
+				//Pressed key but no note
+				//TODO add special color / animation
+				this.stats.streak = 0;
+				this.stats.combo = 1;
+			}
+			return res;
+		};
+
+		//Check key presses and call to see if notes hit
+		for (let hitbox = 0; hitbox < this.hitboxes.length; hitbox++) {
+			if (this.clicks[hitbox]) {
+				check_hit(this.hitboxes[hitbox].center[0]);
+			}
 		}
-		this.bodies = this.bodies.filter(n => n.material !== this.transparent && n.center[2] < 2);
+
+		//Check if notes were missed
+		const missed_notes = this.bodies.filter((n) => n.center[2] >= 2).length;
+		if (missed_notes) {
+			this.stats.combo = 1;
+			this.stats.misses += missed_notes;
+			this.stats.streak = 0;
+			//TODO add note missed animation / color
+		}
+
+		//Delete passed notes
+
+		this.bodies = this.bodies.filter(
+			(n) => n.material !== this.transparent && n.center[2] < 2
+		);
 	}
 
 	display(context, program_state) {
