@@ -370,22 +370,25 @@ export class Assignment4 extends Simulation {
 		}
 		
 		
-		this.audio = new Audio("Back_In_Black.mp3");
+		this.audio = new Audio("assets/Back_In_Black.mp3");
 		this.audio.loop = false;
-		this.cheer = new Audio("cheer.mp3");
+		this.cheer = new Audio("assets/cheer.mp3");
 		this.cheer.loop = false;
-		this.clap = new Audio("clap.mp3");
+		this.clap = new Audio("assets/clap.mp3");
         this.clap.loop = false;
-        this.boo = new Audio("boo.mp3");
+        this.boo = new Audio("assets/boo.mp3");
         this.boo.loop = false;
         this.playboo = true;
         this.playclap = false;
 		this.playcheer = true;
 		this.playaudio = true;
 		this.end_cheer = 0;
-		this.ending_cheer = new Audio("end_cheer.mp3");
+		this.ending_cheer = new Audio("assets/end_cheer.mp3");
 		this.ending_cheer.loop = true;
+		this.miss = new Audio("assets/missed.mp3");
+		this.miss.loop = false;
 
+        this.gameover_sound = new Audio("assets/game_over_boo.mp3")
 		this.gameover = false;
 	}
 
@@ -426,168 +429,171 @@ export class Assignment4 extends Simulation {
 		// update_state():  Override the base time-stepping code to say what this particular
 		// scene should do to its bodies every frame -- including applying forces.
 		//If first iteration generate hitbox block
-		if (this.start) {
-			var iter = 0
-			for (let i of this.lanes) {
-				var clr = hex_color('#1d8522')
-				if (iter == 1)
-					clr = hex_color('#c21021')
-				else if (iter == 2)
-					clr = hex_color('#e6da3c')
-				else if (iter == 3)
-					clr = hex_color('#143973')
-				this.bodies.push(
-					new Body(this.shapes.sub_sphere, this.transparent, vec3(1, 1, 1)).emplace(
-						i.times(Mat4.translation(0,-0.2,0.7)).times(Mat4.rotation(1.7,1,0,0)).times(Mat4.translation(0,0,0)),//.times(Mat4.scale(1,1,0.2)),
-						vec3(0, 0, 0)/**/,
-						0
-					)
-				);
-				iter++;
-			}
-
-			//WHY TF do i need this??
-			for (let a of this.bodies) {
-				a.inverse = Mat4.inverse(a.drawn_location);
-			}
-
-			this.start = false;
-			this.hitboxes = this.bodies.slice();
+		if (!this.gameover) {
+		    if (this.start) {
+		    	var iter = 0
+		    	for (let i of this.lanes) {
+		    		var clr = hex_color('#1d8522')
+		    		if (iter == 1)
+		    			clr = hex_color('#c21021')
+		    		else if (iter == 2)
+		    			clr = hex_color('#e6da3c')
+		    		else if (iter == 3)
+		    			clr = hex_color('#143973')
+		    		this.bodies.push(
+		    			new Body(this.shapes.sub_sphere, this.transparent, vec3(1, 1, 1)).emplace(
+		    				i.times(Mat4.translation(0,-0.2,0.7)).times(Mat4.rotation(1.7,1,0,0)).times(Mat4.translation(0,0,0)),//.times(Mat4.scale(1,1,0.2)),
+		    				vec3(0, 0, 0)/**/,
+		    				0
+		    			)
+		    		);
+		    		iter++;
+		    	}
+    
+		    	//WHY TF do i need this??
+		    	for (let a of this.bodies) {
+		    		a.inverse = Mat4.inverse(a.drawn_location);
+		    	}
+    
+		    	this.start = false;
+		    	this.hitboxes = this.bodies.slice();
+		    }
+    
+		    for (let a of this.bodies.filter((n) => n.linear_velocity != 0)) {
+		    	a.inverse = Mat4.inverse(a.drawn_location);
+		    }
+    
+		    //Create new notes
+		    for (let i = 0; i < this.notes.length; i++) {
+		    	if (this.notes[i].time <= this.t) {
+		    		var clr = hex_color('#1d8522')
+		    		if (this.notes[i].lane == 1)
+		    		    clr = hex_color('#c21021')
+		    		else if (this.notes[i].lane == 2)
+		    		    clr = hex_color('#e6da3c')
+		    		else if (this.notes[i].lane == 3)
+		    		    clr = hex_color('#143973')
+		    		var rot = 160/100;
+		    		// Note torus
+		    		this.bodies.push(
+		    			new Body(this.shapes.torus, this.note_material.override({color: clr, ambient:0.15, specularity:0.3}), vec3(1, 1, 1)).emplace(
+		    				this.lanes[this.notes[i].lane].times(
+		    					Mat4.translation(0, 1, this.distance)
+		    				).times(Mat4.rotation(rot,1,0,0)).times(Mat4.translation(0,0,1.7))/*.times(Mat4.scale(1.5,1.5,1))*/,
+		    				vec3(0, 0, 1).normalized().times(this.velocity),
+		    				0
+		    			)
+		    		);
+		    		// Note bottom white
+		    		this.bodies.push(
+		    			new Body(this.shapes.cylinder, this.note_material.override({ambient:0.1, specularity:0.1}), vec3(1, 1, 1)).emplace(
+		    				this.lanes[this.notes[i].lane].times(
+		    					Mat4.translation(0, 1, this.distance)
+		    				).times(Mat4.rotation(rot,1,0,0)).times(Mat4.translation(0,0,1.7)).times(Mat4.scale(1,1,.18)),
+		    				vec3(0, 0, 1).normalized().times(this.velocity),
+		    				0
+		    			)
+		    		);
+                    //Note light
+		    		this.bodies.push(
+		    			new Body(this.shapes.cylinder, this.note_material.override({ambient:0.6,specularity: 1.0}), vec3(1, 1, 1)).emplace(
+		    				this.lanes[this.notes[i].lane].times(
+		    					Mat4.translation(0, 1, this.distance)
+		    				).times(Mat4.rotation(rot,1,0,0)).times(Mat4.translation(0,0,1.55)).times(Mat4.scale(0.59,0.59,.6)),
+		    				vec3(0, 0, 1).normalized().times(this.velocity),
+		    				0
+		    			)
+		    		);
+		    		//Note light ring
+		    		this.bodies.push(
+		    			new Body(this.shapes.cylinder, this.note_material.override({color: hex_color("#000000")}), vec3(1, 1, 1)).emplace(
+		    				this.lanes[this.notes[i].lane].times(
+		    					Mat4.translation(0, 1, this.distance)
+		    				).times(Mat4.rotation(rot,1,0,0)).times(Mat4.translation(0,0,1.6)).times(Mat4.scale(0.61,0.61,.64)),
+		    				vec3(0, 0, 1).normalized().times(this.velocity),
+		    				0
+		    			)
+		    		);
+		    	} else {
+		    		break;
+		    	}
+		    }
+    
+		    //Remove all newly created notes from array
+		    this.notes = this.notes.filter((n) => n.time >= this.t);
+    
+		    //lane is x coordiante
+		    //Called when a key is pressed
+		    //used to check if there is a note in hitbox
+		    //Returns true if note hit
+		    //False if no note
+		    //Updates hits, streak, combo, points, and materials
+		    const check_hit = (lane) => {
+		    	let res = false;
+		    	const lane_notes = this.bodies.filter(
+		    		(n) => n.center[0] == lane && n.linear_velocity != 0
+		    	);
+		    	const hit_box = this.hitboxes.filter((n) => n.center[0] == lane)[0];
+		    	for (let note of lane_notes) {
+		    		
+		    		if (hit_box.check_if_colliding(note, this.collider)) {
+		    			note.material = this.transparent; //TODO color or animation for hit
+		    	
+		    	        if (this.stats.hits - this.stats.misses < 64)
+		    			    this.stats.hits++;
+                        this.stats.total_hits++;
+		    			this.stats.streak++;
+    
+		    			// Activate fire raise
+		    			if (note.drawn_location[0][3] == -3) {this.fire_raises.green = true;}
+		    			if (note.drawn_location[0][3] == -1) {this.fire_raises.red = true;}
+		    			if (note.drawn_location[0][3] == 1) {this.fire_raises.yellow = true;}
+		    			if (note.drawn_location[0][3] == 3) {this.fire_raises.blue = true;}
+		    			
+		    			this.stats.combo = Math.min(
+		    				8,
+		    				1 + Math.floor(this.stats.streak / 20)
+		    			);
+		    			this.stats.points +=
+		    				this.stats.combo *
+		    				100 *
+		    				(1 - (Math.abs(note.center[2]) - hit_box.center[2]));
+		    			res = true;
+		    		}
+		    	}
+		    	if (!res) {
+		    		//Pressed key but no note
+		    		//TODO add special color / animation
+		    		this.stats.streak = 0;
+		    		this.stats.combo = 1;
+		    	}
+		    	return res;
+		    };
+    
+		    //Check key presses and call to see if notes hit
+		    for (let hitbox = 0; hitbox < this.hitboxes.length; hitbox++) {
+		    	if (this.clicks[hitbox]) {
+		    		check_hit(this.hitboxes[hitbox].center[0]);
+		    	}
+		    }
+    
+		    //Check if notes were missed
+		    const missed_notes = this.bodies.filter((n) => n.center[2] >= 2).length;
+		    if (missed_notes) {
+		    	this.stats.combo = 1;
+		    	if (this.stats.hits - this.stats.misses > -64)
+		    	    this.stats.misses += missed_notes;
+		    	this.stats.streak = 0;
+		    	this.miss.play();
+		    	//TODO add note missed animation / color
+		    }
+    
+		    //Delete passed notes
+    
+		    this.bodies = this.bodies.filter(
+		    	(n) => n.material !== this.transparent && n.center[2] < 2
+		    );
 		}
-
-		for (let a of this.bodies.filter((n) => n.linear_velocity != 0)) {
-			a.inverse = Mat4.inverse(a.drawn_location);
-		}
-
-		//Create new notes
-		for (let i = 0; i < this.notes.length; i++) {
-			if (this.notes[i].time <= this.t) {
-				var clr = hex_color('#1d8522')
-				if (this.notes[i].lane == 1)
-				    clr = hex_color('#c21021')
-				else if (this.notes[i].lane == 2)
-				    clr = hex_color('#e6da3c')
-				else if (this.notes[i].lane == 3)
-				    clr = hex_color('#143973')
-				var rot = 160/100;
-				// Note torus
-				this.bodies.push(
-					new Body(this.shapes.torus, this.note_material.override({color: clr, ambient:0.15, specularity:0.3}), vec3(1, 1, 1)).emplace(
-						this.lanes[this.notes[i].lane].times(
-							Mat4.translation(0, 1, this.distance)
-						).times(Mat4.rotation(rot,1,0,0)).times(Mat4.translation(0,0,1.7))/*.times(Mat4.scale(1.5,1.5,1))*/,
-						vec3(0, 0, 1).normalized().times(this.velocity),
-						0
-					)
-				);
-				// Note bottom white
-				this.bodies.push(
-					new Body(this.shapes.cylinder, this.note_material.override({ambient:0.1, specularity:0.1}), vec3(1, 1, 1)).emplace(
-						this.lanes[this.notes[i].lane].times(
-							Mat4.translation(0, 1, this.distance)
-						).times(Mat4.rotation(rot,1,0,0)).times(Mat4.translation(0,0,1.7)).times(Mat4.scale(1,1,.18)),
-						vec3(0, 0, 1).normalized().times(this.velocity),
-						0
-					)
-				);
-                //Note light
-				this.bodies.push(
-					new Body(this.shapes.cylinder, this.note_material.override({ambient:0.6,specularity: 1.0}), vec3(1, 1, 1)).emplace(
-						this.lanes[this.notes[i].lane].times(
-							Mat4.translation(0, 1, this.distance)
-						).times(Mat4.rotation(rot,1,0,0)).times(Mat4.translation(0,0,1.55)).times(Mat4.scale(0.59,0.59,.6)),
-						vec3(0, 0, 1).normalized().times(this.velocity),
-						0
-					)
-				);
-				//Note light ring
-				this.bodies.push(
-					new Body(this.shapes.cylinder, this.note_material.override({color: hex_color("#000000")}), vec3(1, 1, 1)).emplace(
-						this.lanes[this.notes[i].lane].times(
-							Mat4.translation(0, 1, this.distance)
-						).times(Mat4.rotation(rot,1,0,0)).times(Mat4.translation(0,0,1.6)).times(Mat4.scale(0.61,0.61,.64)),
-						vec3(0, 0, 1).normalized().times(this.velocity),
-						0
-					)
-				);
-			} else {
-				break;
-			}
-		}
-
-		//Remove all newly created notes from array
-		this.notes = this.notes.filter((n) => n.time >= this.t);
-
-		//lane is x coordiante
-		//Called when a key is pressed
-		//used to check if there is a note in hitbox
-		//Returns true if note hit
-		//False if no note
-		//Updates hits, streak, combo, points, and materials
-		const check_hit = (lane) => {
-			let res = false;
-			const lane_notes = this.bodies.filter(
-				(n) => n.center[0] == lane && n.linear_velocity != 0
-			);
-			const hit_box = this.hitboxes.filter((n) => n.center[0] == lane)[0];
-			for (let note of lane_notes) {
-				
-				if (hit_box.check_if_colliding(note, this.collider)) {
-					note.material = this.transparent; //TODO color or animation for hit
-			
-			        if (this.stats.hits - this.stats.misses < 64)
-					    this.stats.hits++;
-                    this.stats.total_hits++;
-					this.stats.streak++;
-
-					// Activate fire raise
-					if (note.drawn_location[0][3] == -3) {this.fire_raises.green = true;}
-					if (note.drawn_location[0][3] == -1) {this.fire_raises.red = true;}
-					if (note.drawn_location[0][3] == 1) {this.fire_raises.yellow = true;}
-					if (note.drawn_location[0][3] == 3) {this.fire_raises.blue = true;}
-					
-					this.stats.combo = Math.min(
-						8,
-						1 + Math.floor(this.stats.streak / 20)
-					);
-					this.stats.points +=
-						this.stats.combo *
-						100 *
-						(1 - (Math.abs(note.center[2]) - hit_box.center[2]));
-					res = true;
-				}
-			}
-			if (!res) {
-				//Pressed key but no note
-				//TODO add special color / animation
-				this.stats.streak = 0;
-				this.stats.combo = 1;
-			}
-			return res;
-		};
-
-		//Check key presses and call to see if notes hit
-		for (let hitbox = 0; hitbox < this.hitboxes.length; hitbox++) {
-			if (this.clicks[hitbox]) {
-				check_hit(this.hitboxes[hitbox].center[0]);
-			}
-		}
-
-		//Check if notes were missed
-		const missed_notes = this.bodies.filter((n) => n.center[2] >= 2).length;
-		if (missed_notes) {
-			this.stats.combo = 1;
-			if (this.stats.hits - this.stats.misses > -64)
-			    this.stats.misses += missed_notes;
-			this.stats.streak = 0;
-			//TODO add note missed animation / color
-		}
-
-		//Delete passed notes
-
-		this.bodies = this.bodies.filter(
-			(n) => n.material !== this.transparent && n.center[2] < 2
-		);
 	}
 
 	display(context, program_state) {
@@ -611,14 +617,6 @@ export class Assignment4 extends Simulation {
 			this.playcheer = false;
 			this.end_cheer++;
 			this.ending_animation = true;
-		}
-		if (this.gameover) {
-			this.audio.pause();
-			program_state.set_camera(Mat4.translation(0, -6, -20));
-			let end_transform = Mat4.identity();
-            end_transform = end_transform.times(Mat4.translation(0, 6, 0));
-            end_transform = end_transform.times(Mat4.scale(14, 8, 4));
-            this.shapes.cube.draw(context, program_state, end_transform, this.you_rock);
 		}
 		if (this.ending_animation && !this.gameover) {
 			program_state.set_camera(Mat4.translation(0, -6, -20));
@@ -658,42 +656,44 @@ export class Assignment4 extends Simulation {
 		// Guitarneck
 		//
         // neck/body
-        guitar_neck_transform = guitar_neck_transform.times(Mat4.translation(0, -1, -5));
-		guitar_neck_transform = guitar_neck_transform.times(Mat4.scale(-4.1, 0.1, 16));
-	    guitar_neck_transform = guitar_neck_transform.times(Mat4.rotation(1, -1, 0, 0));
-        this.shapes.cube_neck.draw(context, program_state, guitar_neck_transform, this.neck_overlay)
-        // neck edges      
-        let edge_neck_transform = Mat4.identity();
-        edge_neck_transform = edge_neck_transform.times(Mat4.translation(4.2, -1.175, -5.3))
-        edge_neck_transform = edge_neck_transform.times(Mat4.scale(.1, 0.1, 22))
-        this.shapes.cube_neck.draw(context, program_state, edge_neck_transform, this.note_material.override({color: hex_color('#bfbbbb')}))
-        edge_neck_transform = Mat4.identity();
-        edge_neck_transform = edge_neck_transform.times(Mat4.translation(-4.2, -1.175, -5.3))
-        edge_neck_transform = edge_neck_transform.times(Mat4.scale(.1, 0.1, 22))
-        this.shapes.cube_neck.draw(context, program_state, edge_neck_transform, this.note_material.override({color: hex_color('#bfbbbb')}))
-        // lane lines
-        edge_neck_transform = Mat4.identity();
-        edge_neck_transform = edge_neck_transform.times(Mat4.translation(3, -0.91, -13.5))
-        edge_neck_transform = edge_neck_transform.times(Mat4.scale(.02, 0.05, 13))
-        this.shapes.cube_neck.draw(context, program_state, edge_neck_transform, this.note_material.override({color: hex_color('#8f9294'), ambient:0.1}))
-        edge_neck_transform = Mat4.identity();
-        edge_neck_transform = edge_neck_transform.times(Mat4.translation(1, -0.91, -13.5))
-        edge_neck_transform = edge_neck_transform.times(Mat4.scale(.02, 0.05, 13))
-        this.shapes.cube_neck.draw(context, program_state, edge_neck_transform, this.note_material.override({color: hex_color('#8f9294'), ambient:0.1}))
-        edge_neck_transform = Mat4.identity();
-        edge_neck_transform = edge_neck_transform.times(Mat4.translation(-1, -0.91, -13.5))
-        edge_neck_transform = edge_neck_transform.times(Mat4.scale(.02, 0.05, 13))
-        this.shapes.cube_neck.draw(context, program_state, edge_neck_transform, this.note_material.override({color: hex_color('#8f9294'), ambient:0.1}))
-        edge_neck_transform = Mat4.identity();
-        edge_neck_transform = edge_neck_transform.times(Mat4.translation(-3, -0.91, -13.5))
-        edge_neck_transform = edge_neck_transform.times(Mat4.scale(.02, 0.05, 13))
-        this.shapes.cube_neck.draw(context, program_state, edge_neck_transform, this.note_material.override({color: hex_color('#8f9294'), ambient:0.1}))
-        // perp line 
-        edge_neck_transform = Mat4.identity();
-        edge_neck_transform = edge_neck_transform.times(Mat4.rotation(Math.PI/2, 0, 1, 0))
-        edge_neck_transform = edge_neck_transform.times(Mat4.translation(1.09, -0.93, 0))
-        edge_neck_transform = edge_neck_transform.times(Mat4.scale(.025, 0.1, 4.1))
-        this.shapes.cube_neck.draw(context, program_state, edge_neck_transform, this.note_material.override({color: hex_color('#bfbbbb')}))
+        if (!this.gameover) {
+            guitar_neck_transform = guitar_neck_transform.times(Mat4.translation(0, -1, -5));
+		    guitar_neck_transform = guitar_neck_transform.times(Mat4.scale(-4.1, 0.1, 16));
+	        guitar_neck_transform = guitar_neck_transform.times(Mat4.rotation(1, -1, 0, 0));
+            this.shapes.cube_neck.draw(context, program_state, guitar_neck_transform, this.neck_overlay)
+            // neck edges      
+            let edge_neck_transform = Mat4.identity();
+            edge_neck_transform = edge_neck_transform.times(Mat4.translation(4.2, -1.175, -5.3))
+            edge_neck_transform = edge_neck_transform.times(Mat4.scale(.1, 0.1, 22))
+            this.shapes.cube_neck.draw(context, program_state, edge_neck_transform, this.note_material.override({color: hex_color('#bfbbbb')}))
+            edge_neck_transform = Mat4.identity();
+            edge_neck_transform = edge_neck_transform.times(Mat4.translation(-4.2, -1.175, -5.3))
+            edge_neck_transform = edge_neck_transform.times(Mat4.scale(.1, 0.1, 22))
+            this.shapes.cube_neck.draw(context, program_state, edge_neck_transform, this.note_material.override({color: hex_color('#bfbbbb')}))
+            // lane lines
+            edge_neck_transform = Mat4.identity();
+            edge_neck_transform = edge_neck_transform.times(Mat4.translation(3, -0.91, -13.5))
+            edge_neck_transform = edge_neck_transform.times(Mat4.scale(.02, 0.05, 13))
+            this.shapes.cube_neck.draw(context, program_state, edge_neck_transform, this.note_material.override({color: hex_color('#8f9294'), ambient:0.1}))
+            edge_neck_transform = Mat4.identity();
+            edge_neck_transform = edge_neck_transform.times(Mat4.translation(1, -0.91, -13.5))
+            edge_neck_transform = edge_neck_transform.times(Mat4.scale(.02, 0.05, 13))
+            this.shapes.cube_neck.draw(context, program_state, edge_neck_transform, this.note_material.override({color: hex_color('#8f9294'), ambient:0.1}))
+            edge_neck_transform = Mat4.identity();
+            edge_neck_transform = edge_neck_transform.times(Mat4.translation(-1, -0.91, -13.5))
+            edge_neck_transform = edge_neck_transform.times(Mat4.scale(.02, 0.05, 13))
+            this.shapes.cube_neck.draw(context, program_state, edge_neck_transform, this.note_material.override({color: hex_color('#8f9294'), ambient:0.1}))
+            edge_neck_transform = Mat4.identity();
+            edge_neck_transform = edge_neck_transform.times(Mat4.translation(-3, -0.91, -13.5))
+            edge_neck_transform = edge_neck_transform.times(Mat4.scale(.02, 0.05, 13))
+            this.shapes.cube_neck.draw(context, program_state, edge_neck_transform, this.note_material.override({color: hex_color('#8f9294'), ambient:0.1}))
+            // perp line 
+            edge_neck_transform = Mat4.identity();
+            edge_neck_transform = edge_neck_transform.times(Mat4.rotation(Math.PI/2, 0, 1, 0))
+            edge_neck_transform = edge_neck_transform.times(Mat4.translation(1.09, -0.93, 0))
+            edge_neck_transform = edge_neck_transform.times(Mat4.scale(.025, 0.1, 4.1))
+            this.shapes.cube_neck.draw(context, program_state, edge_neck_transform, this.note_material.override({color: hex_color('#bfbbbb')}))
+        }
 
 
         // Note pockets
@@ -910,9 +910,6 @@ export class Assignment4 extends Simulation {
         		this.playboo = false;
         	}
         }
-        else if (score_dif == -16) {
-        	this.gameover == true;
-        }
         else if (score_dif > 7){
             this.shapes.cylinder.draw(context, program_state, score_transform, this.score_material_green);
             if (this.playcheer) {
@@ -931,7 +928,18 @@ export class Assignment4 extends Simulation {
         	}
         }
 
-
+        if (score_dif < -15) {
+        	this.gameover = true;
+        }
+        if (this.gameover) {
+			this.audio.pause();
+			program_state.set_camera(Mat4.translation(0, -6, -20));
+			let end_transform = Mat4.identity();
+            end_transform = end_transform.times(Mat4.translation(0, 6, 1.5));
+            end_transform = end_transform.times(Mat4.scale(11, 8, 4));
+            this.shapes.cube.draw(context, program_state, end_transform, this.game_over);
+            this.gameover_sound.play();
+		}
         score_transform = score_transform.times(Mat4.scale(1/1.5,1/1.5,1/0.2))
 
         score_transform = Mat4.identity();        
