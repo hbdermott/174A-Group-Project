@@ -6,30 +6,46 @@
 <head>
     <meta charset="UTF-8"/>
     <link href="assets/fav.ico" rel="icon">
-    <title>Tiny Graphics</title>
+    <link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet">
+    <title>Guitar Hero</title>
 </head>
+<link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet">
 <body style="background: Black; margin: 0px">
+<link rel="stylesheet" type="text/css" href="style.css">
 <!-- Begin typing your web page here. -->
 <!-- The following code embeds a WebGL canvas panel, loads certain scene(s), and displays panel(s) of their controls.-->
 <div class="canvas-widget" id="main-canvas"></div>
+<div id="title">Welcome to Guitar Hero!</div>
+<div id="subtitle">Back in Black</div>
+<div id="controls">Controls:</div>
+<div id="green">'A' - Green</div>
+<div id="red">'S' - Red</div>
+<div id="yellow">'D' - Yellow</div>
+<div id="blue">'F' - Blue</div>
+<div id="rock">ROCK ON!</div>
+<button id="start-game" class="button" style="horizontal-align:middle">Start Game</button>
 <script type=module>
     import {Main_Scene, Additional_Scenes, Canvas_Widget} from './main-scene.js';
 
-    // ********************* THE ENTRY POINT OF YOUR WHOLE PROGRAM STARTS HERE *********************
+    // ** THE ENTRY POINT OF YOUR WHOLE PROGRAM STARTS HERE **
     // Indicate which element on the page you want the Canvas_Widget to replace with a 3D WebGL area:
+
+
+    document.getElementById("start-game").addEventListener("click", startgame, false);
+
+    function startgame(){
     const element_to_replace = document.querySelector("#main-canvas");
+    const removeButton = document.getElementById("start-game");
+    removeButton.remove();
     // Import the file that defines a scene.
     const scenes = [Main_Scene, ...Additional_Scenes].map(scene => new scene());
     // This line creates your scene.
     new Canvas_Widget(element_to_replace, scenes, {make_controls: true, show_explanation: false,
                 make_editor: false, make_code_nav: false});
 
-    var element = document.getElementById("main-canvas");
-    var canvas = document.getElementsByTagName("canvas")[0];
-    element.style.width = window.innerWidth;
-    element.style.height = window.innerHeight;
-    canvas.style.width = window.innerWidth;
-    canvas.style.height = window.innerHeight;
+
+    }
+
 </script>
 
 </body>

@@ -1,0 +1,72 @@
+#title {
+	font-family: 'Press Start 2P';
+	font-size: 50px;
+	width: 100%;
+	text-align: center;
+	padding: 20px;
+	color: white;
+}
+#subtitle {
+	font-family: 'Press Start 2P';
+	font-size: 35px;
+	width: 100%;
+	padding: 30px;
+	text-align: center;
+	color: red;
+}
+#controls {
+	font-family: 'Press Start 2P';
+	font-size: 30px;
+	width: 100%;
+	padding: 10px;
+	text-align: center;
+	color: white;
+}
+#green {
+	font-family: 'Press Start 2P';
+	font-size: 25px;
+	width: 100%;
+	padding: 10px;
+	text-align: center;
+	color: green;
+}
+#yellow {
+	font-family: 'Press Start 2P';
+	font-size: 25px;
+	width: 100%;
+	padding: 10px;
+	text-align: center;
+	color: yellow;
+}
+#red {
+	font-family: 'Press Start 2P';
+	font-size: 25px;
+	width: 100%;
+	padding: 10px;
+	text-align: center;
+	color: red;
+}
+#blue {
+	font-family: 'Press Start 2P';
+	font-size: 25px;
+	width: 100%;
+	padding: 10px;
+	text-align: center;
+	color: blue;
+}
+.button {
+  border-radius: 10px;
+  font-family: 'Press Start 2P';
+  background-color: red;
+  color: #FFFFFF;
+  text-align: center;
+  font-size: 28px;
+  width: 200px;
+  cursor: pointer;
+  margin: 20px;
+  position: absolute;
+  top: 70%;
+  left: 50%;
+  -ms-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+}

@@ -1,7 +1,7 @@
 import {Body, Simulation} from "./examples/collisions-demo.js";
 import { defs, tiny } from "./examples/common.js";
 
-const {Cube, Axis_Arrows, Textured_Phong} = defs
+const {Cube, Axis_Arrows, Textured_Phong, Fake_Bump_Map} = defs
 
 const {
 	Vector,
@@ -109,6 +109,16 @@ export class Assignment4 extends Simulation {
 			color: color(1, 1, 1, 1),
 			ambient: .5,
 		});
+		this.you_rock = new Material(new Textured_Phong, {
+			color: color(0, 0, 0, 1),
+			ambient: 1,
+			texture: new Texture("assets/you_rock.png"),
+		});
+		this.game_over = new Material(new Textured_Phong, {
+			color: color(0, 0, 0, 1),
+			ambient: 1,
+			texture: new Texture("assets/game_over.png"),
+		});
 		this.note_material_circ = new Material(phong, {
 			color: color(1, 1, 1, 1),
 			ambient: .2,
@@ -197,54 +207,143 @@ export class Assignment4 extends Simulation {
 
 
 		this.start = true; //Used to create hitboxes as
-							//we cant create them outside
+		                     //we cant create them outside
 							//of the update_state function
 		//Song Data:
 		//Notes of format time(s), lane
 		//where time is when note appears
 		//not when it should be hit
 		//TODO: may change in future
+		this.ending_animation = false;
 		this.notes = [
-					new Note(1, 0),
-					new Note(1, 2),
-					new Note(4, 1),
-					new Note(4, 0),
-					new Note(5, 3),
-					new Note(6, 0),
 					new Note(7, 0),
-					new Note(8, 0),
-					new Note(9, 0),
-					new Note(9, 2),
-					new Note(12, 1),
-					new Note(12, 0),
-					new Note(13, 3),
-					new Note(14, 0),
-					new Note(7+8, 0),
-					new Note(8+8, 0),
-					new Note(1+16, 0),
-					new Note(1+16, 2),
-					new Note(4+16, 1),
-					new Note(4+16, 0),
-					new Note(5+16, 3),
-					new Note(6+16, 0),
-					new Note(7+16, 0),
-					new Note(8+16, 0),
-					new Note(1+24, 0),
-					new Note(1+24, 2),
-					new Note(4+24, 1),
-					new Note(4+24, 0),
-					new Note(5+24, 3),
-					new Note(6+24, 0),
-					new Note(7+24, 0),
-					new Note(8+24, 0),
-					new Note(1+32, 0),
-					new Note(1+32, 2),
-					new Note(4+32, 1),
-					new Note(4+32, 0),
-					new Note(5+32, 3),
-					new Note(6+32, 0),
-					new Note(7+32, 0),
-					new Note(8+32, 0),
+					new Note(7, 2),
+					new Note(8, 1),
+					new Note(8.3, 2),
+					new Note(9.3, 2),
+					new Note(9.6, 3),
+					new Note(11.3, 3),
+					new Note(11.6, 2),
+					new Note(11.8, 1),
+					new Note(12.1, 0),
+					new Note(12.1, 2),
+					new Note(13.2, 1),
+					new Note(13.5, 2),
+					new Note(14.5, 2),
+					new Note(14.8, 3),
+					new Note(15.4, 0),
+					new Note(15.6, 3),
+					new Note(15.8, 0),
+					new Note(16, 3),
+					new Note(16.2, 0),
+					new Note(16.4, 3),
+					new Note(16.6, 0),
+					new Note(16.8, 3),
+					new Note(17.4, 0),
+					new Note(17.4, 2),
+					new Note(18.4, 1),
+					new Note(18.7, 2),
+					new Note(19.7, 2),
+					new Note(20, 3),
+					new Note(21.7, 3),
+					new Note(22, 2),
+					new Note(22.2, 1),
+					new Note(22.8, 0),
+					new Note(22.8, 2),
+					new Note(23.8, 1),
+					new Note(24.1, 2),
+					new Note(25.1, 2),
+					new Note(25.4, 3),
+					new Note(26, 0),
+					new Note(26.2, 3),
+					new Note(26.4, 0),
+					new Note(26.6, 3),
+					new Note(26.8, 0),
+					new Note(27, 3),
+					new Note(27.2, 0),
+					new Note(27.4, 3),
+					new Note(28, 0),
+					new Note(28, 2),
+					new Note(29, 1),
+					new Note(29.3, 2),
+					new Note(30.3, 2),
+					new Note(30.6, 3),
+					new Note(32.3, 3),
+					new Note(32.6, 2),
+					new Note(32.8, 1),
+					new Note(33.2, 0),
+					new Note(33.2, 2),
+					new Note(34.2, 1),
+					new Note(34.5, 2),
+					new Note(35.5, 2),
+					new Note(35.8, 3),
+					new Note(36.4, 0),
+					new Note(36.6, 3),
+					new Note(36.8, 0),
+					new Note(37, 3),
+					new Note(37.2, 0),
+					new Note(37.4, 3),
+					new Note(37.6, 0),
+					new Note(37.8, 3),
+					new Note(38.4, 0),
+					new Note(38.4, 2),
+					new Note(39.4, 1),
+					new Note(39.7, 2),
+					new Note(40.7, 2),
+					new Note(41, 3),
+					new Note(42.7, 3),
+					new Note(43, 2),
+					new Note(43.2, 1),
+					new Note(43.7, 0),
+					new Note(43.7, 2),
+					new Note(44.7, 1),
+					new Note(45, 2),
+					new Note(46, 2),
+					new Note(46.3, 3),
+					new Note(46.9, 0),
+					new Note(47.1, 3),
+					new Note(47.3, 0),
+					new Note(47.5, 3),
+					new Note(47.7, 0),
+					new Note(47.9, 3),
+					new Note(48.1, 0),
+					new Note(48.3, 3),
+					new Note(49.3, 3),
+					new Note(49.8, 2),
+					new Note(50.3, 3),
+					new Note(50.8, 2),
+					new Note(51.2, 0),
+					new Note(51.8, 3),
+					new Note(52.3, 2),
+					new Note(52.8, 3),
+					new Note(53.3, 2),
+					new Note(53.7, 0),
+					new Note(54.3, 0),
+					new Note(54.8, 1),
+					new Note(55.3, 3),
+					new Note(55.8, 2),
+					new Note(56.2, 3),
+					new Note(56.8, 0),
+					new Note(57.3, 1),
+					new Note(57.8, 3),
+					new Note(58.3, 2),
+					new Note(58.7, 3),
+					new Note(59.3, 3),
+					new Note(59.8, 2),
+					new Note(60.3, 3),
+					new Note(60.8, 2),
+					new Note(61.2, 0),
+					new Note(61.8, 3),
+					new Note(62.3, 2),
+					new Note(62.8, 3),
+					new Note(63.3, 2),
+					new Note(63.7, 0),
+					new Note(66.6, 0),
+					new Note(66.6, 1),
+					new Note(67, 2),
+					new Note(67, 3),
+					new Note(67.4, 0),
+					new Note(67.4, 1)
 				];
 
 		this.distance = -20;
@@ -271,8 +370,23 @@ export class Assignment4 extends Simulation {
 		}
 		
 		
-		var audio = new Audio(".bnb.mp3.icloud");
-		audio.play();
+		this.audio = new Audio("Back_In_Black.mp3");
+		this.audio.loop = false;
+		this.cheer = new Audio("cheer.mp3");
+		this.cheer.loop = false;
+		this.clap = new Audio("clap.mp3");
+        this.clap.loop = false;
+        this.boo = new Audio("boo.mp3");
+        this.boo.loop = false;
+        this.playboo = true;
+        this.playclap = false;
+		this.playcheer = true;
+		this.playaudio = true;
+		this.end_cheer = 0;
+		this.ending_cheer = new Audio("end_cheer.mp3");
+		this.ending_cheer.loop = true;
+
+		this.gameover = false;
 	}
 
 	make_control_panel() {
@@ -311,8 +425,7 @@ export class Assignment4 extends Simulation {
 	update_state(dt) {
 		// update_state():  Override the base time-stepping code to say what this particular
 		// scene should do to its bodies every frame -- including applying forces.
-		//If first iteration generate hitbox blocks
-		
+		//If first iteration generate hitbox block
 		if (this.start) {
 			var iter = 0
 			for (let i of this.lanes) {
@@ -489,6 +602,32 @@ export class Assignment4 extends Simulation {
 
 			// Locate the camera here (inverted matrix).
 		}
+		if (this.playaudio && !this.gameover) {
+		    this.audio.play();
+		    this.playaudio = false;
+		}
+		if (this.audio.ended && this.end_cheer <= 1 && !this.gameover) {
+			this.ending_cheer.play();
+			this.playcheer = false;
+			this.end_cheer++;
+			this.ending_animation = true;
+		}
+		if (this.gameover) {
+			this.audio.pause();
+			program_state.set_camera(Mat4.translation(0, -6, -20));
+			let end_transform = Mat4.identity();
+            end_transform = end_transform.times(Mat4.translation(0, 6, 0));
+            end_transform = end_transform.times(Mat4.scale(14, 8, 4));
+            this.shapes.cube.draw(context, program_state, end_transform, this.you_rock);
+		}
+		if (this.ending_animation && !this.gameover) {
+			program_state.set_camera(Mat4.translation(0, -6, -20));
+			let end_transform = Mat4.identity();
+            end_transform = end_transform.times(Mat4.translation(0, 6, 0));
+            end_transform = end_transform.times(Mat4.scale(14, 8, 4));
+            this.shapes.cube.draw(context, program_state, end_transform, this.you_rock);
+		}
+		    
 			program_state.projection_transform = Mat4.perspective(
 				Math.PI / 4,
 				context.width / context.height,
@@ -756,7 +895,6 @@ export class Assignment4 extends Simulation {
         else {
         	score_dif = score_dif / 4;
         }
-        console.log(score_dif)
         let score_disX = 5;
         let score_disY = 3;
         let score_disZ = 0;
@@ -765,13 +903,32 @@ export class Assignment4 extends Simulation {
         score_transform = score_transform.times(Mat4.translation(score_disX, score_disY, score_disZ));
         score_transform = score_transform.times(Mat4.scale(1.5,1.5,0.2))
         if (score_dif < -6) {
-        	this.shapes.cylinder.draw(context, program_state, score_transform, this.score_material_red)
+        	this.shapes.cylinder.draw(context, program_state, score_transform, this.score_material_red);
+        	if (this.playboo) {
+        		this.boo.play();
+        		this.playclap = true;
+        		this.playboo = false;
+        	}
+        }
+        else if (score_dif == -16) {
+        	this.gameover == true;
         }
         else if (score_dif > 7){
-            this.shapes.cylinder.draw(context, program_state, score_transform, this.score_material_green)
+            this.shapes.cylinder.draw(context, program_state, score_transform, this.score_material_green);
+            if (this.playcheer) {
+                this.cheer.play();
+                this.playclap = true;
+                this.playcheer = false;
+            }
         }
         else {
-        	this.shapes.cylinder.draw(context, program_state, score_transform, this.score_material_yellow)
+        	this.shapes.cylinder.draw(context, program_state, score_transform, this.score_material_yellow);
+        	if (this.playclap) {
+        		this.clap.play();
+        		this.playcheer = true;
+        		this.playboo = true;
+        		this.playclap = false;
+        	}
         }
 
 
@@ -1116,8 +1273,7 @@ export class Assignment4 extends Simulation {
 	    background = background.times(Mat4.translation(0,4,-48))
 	    background = background.times(Mat4.scale(40,15,1))
 	    this.shapes.cube.draw(context,program_state,background, this.back_mat)
-
-	    
+   
 	}
 
 }
